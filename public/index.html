@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WhatsApp Bot Pairing</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>🤖 WhatsApp Bot Pairing</h1>
+    <form id="pairForm">
+      <label for="phone">Enter your WhatsApp Number:</label>
+      <input type="tel" id="phone" placeholder="e.g. 1234567890" required>
+      <button type="submit">Get Pairing Code</button>
+    </form>
+    <div id="pairing" class="hidden">
+      <h2>Pair Your WhatsApp</h2>
+      <div class="pairing-info">
+        <p><strong>Pairing Code:</strong> <span id="pairingCode"></span></p>
+        <p>1. Open WhatsApp on your phone.</p>
+        <p>2. Go to <strong>Settings &gt; Linked Devices</strong>.</p>
+        <p>3. Tap <strong>Link a Device</strong> & enter the code above.</p>
+        <button id="completePair">I have linked my WhatsApp</button>
+      </div>
+    </div>
+    <div id="session" class="hidden">
+      <h2>✅ Linked!</h2>
+      <p><strong>Session ID:</strong> <span id="sessionId"></span></p>
+      <p>Copy this Session ID into your bot's <code>.env</code> file as <code>PAIRING_SESSION_ID</code>.</p>
+      <pre>PAIRING_SESSION_ID=<span id="envSessionId"></span></pre>
+    </div>
+  </div>
+  <script>
+    const pairForm = document.getElementById('pairForm');
+    const pairingDiv = document.getElementById('pairing');
+    const sessionDiv = document.getElementById('session');
+    let currentSessionId;
+
+    pairForm.onsubmit = async (e) => {
+      e.preventDefault();
+      const phone = document.getElementById('phone').value;
+      const res = await fetch('/api/request-pairing', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ phone })
+      });
+      const data = await res.json();
+      if (data.pairingCode) {
+        currentSessionId = data.sessionId;
+        document.getElementById('pairingCode').innerText = data.pairingCode;
+        pairForm.classList.add('hidden');
+        pairingDiv.classList.remove('hidden');
+      }
+    };
+
+    document.getElementById('completePair').onclick = async () => {
+      await fetch('/api/complete-pair', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ sessionId: currentSessionId })
+      });
+      // Show session info
+      document.getElementById('sessionId').innerText = currentSessionId;
+      document.getElementById('envSessionId').innerText = currentSessionId;
+      pairingDiv.classList.add('hidden');
+      sessionDiv.classList.remove('hidden');
+    };
+  </script>
+</body>
+</html>
